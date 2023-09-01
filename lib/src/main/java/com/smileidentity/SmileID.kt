@@ -1,7 +1,6 @@
 package com.smileidentity
 
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
@@ -84,7 +83,7 @@ object SmileID {
         api = retrofit.create(SmileIDService::class.java)
 
         // Usually looks like: /data/user/0/<package name>/app_SmileID
-        fileSavePath = context.getDir("SmileID", MODE_PRIVATE).absolutePath
+        fileSavePath = context.cacheDir.path // context.getDir("SmileID", MODE_PRIVATE).absolutePath
     }
 
     /**

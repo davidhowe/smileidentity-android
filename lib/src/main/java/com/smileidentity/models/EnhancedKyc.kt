@@ -44,6 +44,10 @@ data class EnhancedKycResponse(
     @Json(name = "ExpirationDate") val expirationDate: String?,
     @Json(name = "DOB") val dob: String?,
     @Json(name = "Photo") val base64Photo: String?,
+    @Json(name = "PhoneNumber") val phoneNumber1: String?,
+    @Json(name = "PhoneNumber2") val phoneNumber2: String?,
+    @Json(name = "Gender") val gender: String?,
+    @Json(name = "Address") val address: String?,
 ) : Parcelable
 
 @Parcelize

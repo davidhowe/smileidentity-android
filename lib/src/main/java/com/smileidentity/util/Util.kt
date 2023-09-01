@@ -41,6 +41,7 @@ import retrofit2.HttpException
 import timber.log.Timber
 import java.io.File
 import java.io.Serializable
+import kotlin.random.Random
 
 @Composable
 internal fun annotatedStringResource(
@@ -197,7 +198,7 @@ internal fun postProcessImageBitmap(
             )
         }
 
-        mutableBitmap.compress(JPEG, compressionQuality, it)
+        mutableBitmap.compress(Bitmap.CompressFormat.JPEG, compressionQuality, it)
     }
     return file
 }
@@ -229,7 +230,15 @@ internal fun postProcessImage(
  * format `si_${imageType}_<timestamp>.jpg`
  */
 internal fun createSmileTempFile(imageType: String, savePath: String = SmileID.fileSavePath): File {
-    return File(savePath, "si_${imageType}_${System.currentTimeMillis()}.jpg")
+    return File.createTempFile(
+        "si_${imageType}_${
+        Random(System.currentTimeMillis()).nextLong(
+            1,
+            90000,
+        )
+        }",
+        ".jpg",
+    )
 }
 
 internal fun createLivenessFile() = createSmileTempFile("liveness")

@@ -54,6 +54,8 @@ class DocumentViewModel(
     private val idType: Document,
     private val idAspectRatio: Float? = idType.aspectRatio,
     private var selfieFile: File? = null,
+    private val skipApiSubmission: Boolean,
+    private val skipSelfieCapture: Boolean,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DocumentUiState())
     val uiState = _uiState.asStateFlow()
@@ -104,7 +106,12 @@ class DocumentViewModel(
                 when (result) {
                     is ImageCaptureResult.Error -> it.resumeWithException(result.throwable)
                     is ImageCaptureResult.Success -> it.resume(
-                        postProcessImage(file = documentFile, desiredAspectRatio = idAspectRatio),
+                        postProcessImage(
+                            file = documentFile,
+                            processRotation = true,
+                            compressionQuality = 75,
+                            desiredAspectRatio = idAspectRatio,
+                        ),
                     )
                 }
             }
@@ -125,7 +132,19 @@ class DocumentViewModel(
         }
     }
 
-    fun submitJob(documentFrontFile: File, documentBackFile: File? = null): Job {
+    fun submitJob(documentFrontFile: File, documentBackFile: File? = null): Job? {
+        if (skipApiSubmission) {
+            val selfieImageInfo = selfieFile?.asSelfieImage()
+            result = SmileIDResult.Success(
+                DocumentVerificationResult(
+                    selfieFile = selfieImageInfo?.image,
+                    documentFrontFile = documentFrontFile,
+                    documentBackFile = documentBackFile,
+                ),
+            )
+            _uiState.update { it.copy(processingState = ProcessingState.Success) }
+            return null
+        }
         _uiState.update { it.copy(processingState = ProcessingState.InProgress) }
         val proxy = { e: Throwable ->
             result = SmileIDResult.Error(e)
@@ -187,10 +206,17 @@ class DocumentViewModel(
     }
 
     fun onDocumentConfirmed() {
-        if (selfieFile != null) {
-            submitJob(documentFrontFile = documentFrontFile!!, documentBackFile = documentBackFile)
+        if (skipSelfieCapture) {
+            submitJob(documentFrontFile!!, documentBackFile)
         } else {
-            _uiState.update { it.copy(showSelfieCapture = true) }
+            if (selfieFile != null) {
+                submitJob(
+                    documentFrontFile = documentFrontFile!!,
+                    documentBackFile = documentBackFile,
+                )
+            } else {
+                _uiState.update { it.copy(showSelfieCapture = true) }
+            }
         }
     }
 

@@ -54,6 +54,8 @@ internal fun OrchestratedDocumentVerificationScreen(
     showAttribution: Boolean = true,
     allowGalleryUpload: Boolean = false,
     showInstructions: Boolean = true,
+    skipApiSubmission: Boolean = false,
+    skipSelfieCapture: Boolean = false,
     viewModel: DocumentViewModel = viewModel(
         factory = viewModelFactory {
             DocumentViewModel(
@@ -61,6 +63,8 @@ internal fun OrchestratedDocumentVerificationScreen(
                 jobId = jobId,
                 idType = idType,
                 idAspectRatio = idAspectRatio,
+                skipApiSubmission = skipApiSubmission,
+                skipSelfieCapture = skipSelfieCapture,
             )
         },
     ),

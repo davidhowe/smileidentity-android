@@ -45,6 +45,8 @@ class DocumentViewModelTest {
             randomJobId(),
             document,
             selfieFile = selfieFile,
+            skipApiSubmission = false,
+            skipSelfieCapture = false,
         )
         SmileID.config = Config(
             partnerId = "partnerId",
@@ -88,7 +90,7 @@ class DocumentViewModelTest {
         coEvery { SmileID.api.authenticate(any()) } throws RuntimeException()
 
         // when
-        subject.submitJob(documentFrontFile).join()
+        subject.submitJob(documentFrontFile)?.join()
 
         // then
         assertEquals(ProcessingState.Error, subject.uiState.value.processingState)
@@ -117,7 +119,7 @@ class DocumentViewModelTest {
         coEvery { SmileID.api.upload(any(), capture(uploadBodySlot)) } just Runs
 
         // when
-        subject.submitJob(documentFrontFile).join()
+        subject.submitJob(documentFrontFile)?.join()
 
         // then
         assertNotNull(uploadBodySlot.captured.idInfo)

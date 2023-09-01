@@ -55,6 +55,8 @@ internal fun DocumentCaptureScreen(
     jobId: String = rememberSaveable { randomJobId() },
     isBackSide: Boolean = false,
     bypassSelfieCaptureWithFile: File? = null,
+    skipSelfieCapture: Boolean = false,
+    skipApiSubmission: Boolean = false,
     viewModel: DocumentViewModel = viewModel(
         factory = viewModelFactory {
             DocumentViewModel(
@@ -63,6 +65,8 @@ internal fun DocumentCaptureScreen(
                 idType = idType,
                 idAspectRatio = idAspectRatio,
                 selfieFile = bypassSelfieCaptureWithFile,
+                skipSelfieCapture = skipSelfieCapture,
+                skipApiSubmission = skipApiSubmission,
             )
         },
     ),
