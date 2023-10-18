@@ -88,7 +88,7 @@ android {
     }
 }
 
-mavenPublishing {
+/*mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     coordinates(groupId, artifactId, project.version.toString())
@@ -140,7 +140,7 @@ mavenPublishing {
             }
         }
     }
-}
+}*/
 
 dependencies {
     // OkHttp is exposed in public SmileID interface (initialize), hence "api" vs "implementation"
