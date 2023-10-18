@@ -30,7 +30,7 @@ android {
     buildTypes {
         all {
             val sentryDsn = findProperty("SENTRY_DSN")
-                ?: throw IllegalArgumentException("Please set the SENTRY_DSN gradle property")
+                ?: "def"
             buildConfigField("String", "SENTRY_DSN", "\"$sentryDsn\"")
             buildConfigField("String", "VERSION_NAME", "\"${version}\"")
         }
