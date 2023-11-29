@@ -108,8 +108,6 @@ class DocumentViewModel(
                     is ImageCaptureResult.Success -> it.resume(
                         postProcessImage(
                             file = documentFile,
-                            processRotation = true,
-                            compressionQuality = 75,
                             desiredAspectRatio = idAspectRatio,
                         ),
                     )
