@@ -20,6 +20,7 @@ import com.smileidentity.networking.asLivenessImage
 import com.smileidentity.networking.asSelfieImage
 import com.smileidentity.results.DocumentVerificationResult
 import com.smileidentity.results.EnhancedDocumentVerificationResult
+import com.smileidentity.results.ImageAndDocumentCaptureResult
 import com.smileidentity.results.SmartSelfieResult
 import com.smileidentity.results.SmileIDCallback
 import com.smileidentity.results.SmileIDResult
@@ -50,7 +51,9 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
     private val documentType: String? = null,
     private val captureBothSides: Boolean,
     private var selfieFile: File? = null,
+    private var skipUpload: Boolean, // If true, we expect to supply captured files back and not perform upload job
     private var extraPartnerParams: ImmutableMap<String, String> = persistentMapOf(),
+    private var onResult: SmileIDCallback<T>
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(OrchestratedDocumentUiState())
     val uiState = _uiState.asStateFlow()
@@ -63,6 +66,7 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
     private var stepToRetry: DocumentCaptureFlow? = null
 
     fun onDocumentFrontCaptureSuccess(documentImageFile: File) {
+        Timber.d("onDocumentFrontCaptureSuccess")
         documentFrontFile = documentImageFile
         if (captureBothSides) {
             _uiState.update {
@@ -73,7 +77,7 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
                 it.copy(currentStep = DocumentCaptureFlow.SelfieCapture, errorMessage = null)
             }
         } else {
-            submitJob()
+            submitJob(skipUpload)
         }
     }
 
@@ -83,7 +87,7 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
                 it.copy(currentStep = DocumentCaptureFlow.SelfieCapture, errorMessage = null)
             }
         } else {
-            submitJob()
+            submitJob(skipUpload)
         }
     }
 
@@ -94,24 +98,43 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
                 it.copy(currentStep = DocumentCaptureFlow.SelfieCapture, errorMessage = null)
             }
         } else {
-            submitJob()
+            submitJob(skipUpload)
         }
     }
 
     fun onSelfieCaptureSuccess(it: SmileIDResult.Success<SmartSelfieResult>) {
+        Timber.d("onSelfieCaptureSuccess")
         selfieFile = it.data.selfieFile
         livenessFiles = it.data.livenessFiles
-        submitJob()
+        submitJob(skipUpload)
     }
 
     abstract fun getJobStatus(
-        jobStatusRequest: JobStatusRequest,
+        jobStatusRequest: JobStatusRequest?,
         selfieImage: File,
+        livenessFiles: List<File>?,
         documentFrontFile: File,
         documentBackFile: File?,
     )
 
-    private fun submitJob() {
+    private fun submitJob(skipUpload: Boolean) {
+        if (skipUpload) {
+            getJobStatus(
+                jobStatusRequest = null,
+                selfieImage = selfieFile ?: throw IllegalStateException(
+                    "Selfie file is null",
+                ),
+                livenessFiles = livenessFiles,
+                documentFrontFile = documentFrontFile ?: throw IllegalStateException(
+                    "Document front file is null",
+                ),
+                documentBackFile = documentBackFile,
+            )
+
+            onResult(result)
+
+            return
+        }
         val documentFrontFile = documentFrontFile
             ?: throw IllegalStateException("documentFrontFile is null")
         _uiState.update {
@@ -162,6 +185,7 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
             getJobStatus(
                 jobStatusRequest = jobStatusRequest,
                 selfieImage = selfieImageInfo.image,
+                livenessFiles = livenessImageInfo.map { it.image },
                 documentFrontFile = documentFrontFile,
                 documentBackFile = documentBackFile,
             )
@@ -200,7 +224,7 @@ internal abstract class OrchestratedDocumentViewModel<T : Parcelable>(
         step?.let { stepToRetry ->
             _uiState.update { it.copy(currentStep = stepToRetry, errorMessage = null) }
             if (stepToRetry is DocumentCaptureFlow.ProcessingScreen) {
-                submitJob()
+                submitJob(skipUpload)
             }
         }
     }
@@ -217,6 +241,7 @@ internal class DocumentVerificationViewModel(
     captureBothSides: Boolean,
     selfieFile: File? = null,
     extraPartnerParams: ImmutableMap<String, String> = persistentMapOf(),
+    onResult: SmileIDCallback<DocumentVerificationResult>
 ) : OrchestratedDocumentViewModel<DocumentVerificationResult>(
     jobType = jobType,
     userId = userId,
@@ -225,18 +250,21 @@ internal class DocumentVerificationViewModel(
     documentType = documentType,
     captureBothSides = captureBothSides,
     selfieFile = selfieFile,
+    skipUpload = false,
     extraPartnerParams = extraPartnerParams,
+    onResult = onResult
 ) {
 
     override fun getJobStatus(
-        jobStatusRequest: JobStatusRequest,
+        jobStatusRequest: JobStatusRequest?,
         selfieImage: File,
+        livenessFiles: List<File>?,
         documentFrontFile: File,
         documentBackFile: File?,
     ) {
         viewModelScope.launch {
             val jobStatusResponse =
-                SmileID.api.getDocumentVerificationJobStatus(jobStatusRequest)
+                SmileID.api.getDocumentVerificationJobStatus(jobStatusRequest!!)
             result = SmileIDResult.Success(
                 DocumentVerificationResult(
                     selfieFile = selfieImage,
@@ -258,6 +286,7 @@ internal class EnhancedDocumentVerificationViewModel(
     captureBothSides: Boolean,
     selfieFile: File? = null,
     extraPartnerParams: ImmutableMap<String, String> = persistentMapOf(),
+    onResult: SmileIDCallback<EnhancedDocumentVerificationResult>,
 ) :
     OrchestratedDocumentViewModel<EnhancedDocumentVerificationResult>(
         jobType = jobType,
@@ -267,18 +296,21 @@ internal class EnhancedDocumentVerificationViewModel(
         documentType = documentType,
         captureBothSides = captureBothSides,
         selfieFile = selfieFile,
+        skipUpload = false,
         extraPartnerParams = extraPartnerParams,
+        onResult = onResult
     ) {
 
     override fun getJobStatus(
-        jobStatusRequest: JobStatusRequest,
+        jobStatusRequest: JobStatusRequest?,
         selfieImage: File,
+        livenessFiles: List<File>?,
         documentFrontFile: File,
         documentBackFile: File?,
     ) {
         viewModelScope.launch {
             val jobStatusResponse = SmileID.api.getEnhancedDocumentVerificationJobStatus(
-                jobStatusRequest,
+                jobStatusRequest!!,
             )
             result = SmileIDResult.Success(
                 EnhancedDocumentVerificationResult(
@@ -289,5 +321,46 @@ internal class EnhancedDocumentVerificationViewModel(
                 ),
             )
         }
+    }
+}
+
+internal class ImageAndDocumentCaptureViewModel(
+    jobType: JobType = JobType.BiometricKyc,
+    userId: String,
+    jobId: String,
+    countryCode: String,
+    documentType: String? = null,
+    captureBothSides: Boolean,
+    selfieFile: File? = null,
+    extraPartnerParams: ImmutableMap<String, String> = persistentMapOf(),
+    onResult: SmileIDCallback<ImageAndDocumentCaptureResult>,
+) : OrchestratedDocumentViewModel<ImageAndDocumentCaptureResult>(
+    jobType = jobType,
+    userId = userId,
+    jobId = jobId,
+    countryCode = countryCode,
+    documentType = documentType,
+    captureBothSides = captureBothSides,
+    selfieFile = selfieFile,
+    skipUpload = true,
+    extraPartnerParams = extraPartnerParams,
+    onResult = onResult
+) {
+
+    override fun getJobStatus(
+        jobStatusRequest: JobStatusRequest?,
+        selfieImage: File,
+        livenessFiles: List<File>?,
+        documentFrontFile: File,
+        documentBackFile: File?,
+    ) {
+        result = SmileIDResult.Success(
+            ImageAndDocumentCaptureResult(
+                selfieImage,
+                livenessFiles,
+                documentFrontFile,
+                documentBackFile,
+            ),
+        )
     }
 }
