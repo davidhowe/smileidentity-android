@@ -87,60 +87,6 @@ android {
     }
 }
 
-mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
-    coordinates(groupId, artifactId, project.version.toString())
-    pom {
-        name = "Smile ID Android SDK"
-        description = "The Official Smile ID Android SDK"
-        url = "https://docs.usesmileid.com/integration-options/mobile/android-v10-beta"
-        licenses {
-            license {
-                name = "Smile ID Terms of Use"
-                url = "https://usesmileid.com/terms-and-conditions"
-                distribution = "repo"
-            }
-            license {
-                name = "The MIT License"
-                url = "https://opensource.org/licenses/MIT"
-                distribution = "repo"
-            }
-        }
-        scm {
-            url = "https://github.com/smileidentity/android"
-            connection = "scm:git:git://github.com/smileidentity/android.git"
-            developerConnection = "scm:git:ssh://github.com/smileidentity/android.git"
-        }
-        developers {
-            developer {
-                id = "vanshg"
-                name = "Vansh Gandhi"
-                email = "vansh@smileidentity.com"
-                url = "https://github.com/vanshg"
-                organization = "Smile ID"
-                organizationUrl = "https://usesmileid.com"
-            }
-            developer {
-                id = "JNdhlovu"
-                name = "Japhet Ndhlovu"
-                email = "japhet@smileidentity.com"
-                url = "https://github.com/jndhlovu"
-                organization = "Smile ID"
-                organizationUrl = "https://usesmileid.com"
-            }
-            developer {
-                id = "jumaallan"
-                name = "Juma Allan"
-                email = "juma@smileidentity.com"
-                url = "https://github.com/jumaallan"
-                organization = "Smile ID"
-                organizationUrl = "https://usesmileid.com"
-            }
-        }
-    }
-}
-
 dependencies {
     // OkHttp is exposed in public SmileID interface (initialize), hence "api" vs "implementation"
     api(libs.okhttp)
